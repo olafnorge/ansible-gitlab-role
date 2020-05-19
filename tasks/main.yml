@@ -1,0 +1,91 @@
+---
+- name: assert required variables are set and have reasonable values
+  assert:
+    that:
+      - (gitlab_olafnorge_de_labels | length) > 0
+      - (gitlab_olafnorge_de_network_definitions | length) > 0
+      - (gitlab_olafnorge_de_networks | length) > 0
+
+- name: create secrets for gitlab.example.com
+  docker_secret:
+    data: "{{ gitlab_olafnorge_de_secrets[item].data }}"
+    name: "{{ gitlab_olafnorge_de_secrets[item].name }}"
+    state: present
+  loop: "{{ gitlab_olafnorge_de_secrets.keys() | list }}"
+  register: gitlab_olafnorge_de_secret_results
+
+- name: prepare gitlab_olafnorge_de_secrets_dict
+  template:
+    dest: /tmp/gitlab_olafnorge_de_secrets_dict.json
+    mode: 0600
+    src: gitlab_olafnorge_de_secrets_dict.json.j2
+  delegate_to: localhost
+  run_once: yes
+  changed_when: False
+  vars:
+    gitlab_olafnorge_de_template_results: "{{ gitlab_olafnorge_de_secret_results.results }}"
+
+- name: fetch gitlab_olafnorge_de_secrets_dict from controller
+  set_fact:
+    gitlab_olafnorge_de_secrets_dict: "{{ lookup('file', '/tmp/gitlab_olafnorge_de_secrets_dict.json') }}"
+
+- name: copy gitlab.rb
+  template:
+    dest: "{{ gitlab_olafnorge_de_config_path }}"
+    mode: 0600
+    src: gitlab.rb.j2
+  register: gitlab_olafnorge_de_gitlab_config_results
+
+- name: write runner registration json template
+  copy:
+    content: "{{ gitlab_olafnorge_de_runners[item].registration | to_json }}"
+    dest: "/root/{{ item }}-registration.json"
+    mode: 0400
+  loop: "{{ gitlab_olafnorge_de_runners.keys() | list }}"
+  register: gitlab_olafnorge_de_runner_registration_results
+
+- name: write runner config json template
+  copy:
+    content: "{{ gitlab_olafnorge_de_runners[item].config | to_json }}"
+    dest: "/root/{{ item }}-config.json"
+    mode: 0400
+  loop: "{{ gitlab_olafnorge_de_runners.keys() | list }}"
+  register: gitlab_olafnorge_de_runner_config_results
+
+- name: prepare gitlab_olafnorge_de_config_dict
+  template:
+    dest: /tmp/gitlab_olafnorge_de_config_dict.json
+    mode: 0600
+    src: gitlab_olafnorge_de_config_dict.json.j2
+  delegate_to: localhost
+  run_once: yes
+  changed_when: False
+  vars:
+    gitlab_olafnorge_de_template_results: "{{ (gitlab_olafnorge_de_runner_registration_results.results + gitlab_olafnorge_de_runner_config_results.results + [gitlab_olafnorge_de_gitlab_config_results]) | list }}"
+
+- name: prepare gitlab_olafnorge_de_config_to_file_map
+  template:
+    dest: /tmp/gitlab_olafnorge_de_config_to_file_map.json
+    mode: 0600
+    src: gitlab_olafnorge_de_config_to_file_map.json.j2
+  delegate_to: localhost
+  run_once: yes
+  changed_when: False
+  vars:
+    gitlab_olafnorge_de_template_results: "{{ (gitlab_olafnorge_de_runner_registration_results.results + gitlab_olafnorge_de_runner_config_results.results + [gitlab_olafnorge_de_gitlab_config_results]) | list }}"
+
+- name: fetch gitlab_olafnorge_de_config_dict from controller
+  set_fact:
+    gitlab_olafnorge_de_config_dict: "{{ lookup('file', '/tmp/gitlab_olafnorge_de_config_dict.json') }}"
+
+- name: fetch gitlab_olafnorge_de_config_dict from controller
+  set_fact:
+    gitlab_olafnorge_de_config_to_file_map: "{{ lookup('file', '/tmp/gitlab_olafnorge_de_config_to_file_map.json') }}"
+
+- name: spawn gitlab.example.com service
+  docker_stack:
+    compose:
+      - "{{ gitlab_olafnorge_de_compose }}"
+    name: "{{ gitlab_olafnorge_de_name }}"
+    prune: yes
+    state: present

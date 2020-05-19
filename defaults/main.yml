@@ -1,0 +1,461 @@
+---
+gitlab_olafnorge_de_compose:
+  version: "3.7"
+  services:
+    gitlab:
+      configs:
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['gitlab.rb'] }}"
+          target: /omnibus_config.rb
+      deploy:
+        labels: "{{ gitlab_olafnorge_de_labels }}"
+        placement:
+          constraints:
+            - node.role != manager
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 5
+          window: 300s
+        update_config:
+          failure_action: rollback
+          monitor: 120s
+      environment:
+        GITLAB_OMNIBUS_CONFIG: "from_file('/omnibus_config.rb')"
+      image: "gitlab/gitlab-ce:{{ gitlab_olafnorge_de_version }}"
+      networks: "{{ gitlab_olafnorge_de_networks }}"
+      secrets:
+        - "{{ gitlab_olafnorge_de_secrets.email_password.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.initial_root_password.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.initial_shared_runners_registration_token.name }}"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - /etc/timezone:/etc/timezone:ro
+    ansiblerunner:
+      configs:
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['ansiblerunner-registration.json'] }}"
+          target: /templates/registration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['ansiblerunner-config.json'] }}"
+          target: /templates/configuration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      deploy:
+        placement:
+          constraints:
+            - node.role != manager
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 5
+          window: 300s
+        update_config:
+          failure_action: rollback
+          monitor: 120s
+      environment:
+        GITLAB_URL: "{{ gitlab_olafnorge_de_gitlab_url }}"
+        GITLAB_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        REGISTRATION_TEMPLATE_FILE: /templates/registration_template
+        CONFIGURATION_TEMPLATE_FILE: /templates/configuration_template
+        REGISTRATION_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        RUNNER_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.ansible_runner_token.name }}"
+      image: "olafnorge/gitlab-runner:{{ gitlab_olafnorge_de_runner_version }}"
+      networks: "{{ gitlab_olafnorge_de_networks }}"
+      secrets:
+        - "{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.ansible_runner_token.name }}"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - /etc/timezone:/etc/timezone:ro
+    buildrunner:
+      configs:
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['buildrunner-registration.json'] }}"
+          target: /templates/registration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['buildrunner-config.json'] }}"
+          target: /templates/configuration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      deploy:
+        placement:
+          constraints:
+            - node.role != manager
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 5
+          window: 300s
+        update_config:
+          failure_action: rollback
+          monitor: 120s
+      environment:
+        GITLAB_URL: "{{ gitlab_olafnorge_de_gitlab_url }}"
+        GITLAB_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        REGISTRATION_TEMPLATE_FILE: /templates/registration_template
+        CONFIGURATION_TEMPLATE_FILE: /templates/configuration_template
+        REGISTRATION_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        RUNNER_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.build_runner_token.name }}"
+      image: "olafnorge/gitlab-runner:{{ gitlab_olafnorge_de_runner_version }}"
+      networks: "{{ gitlab_olafnorge_de_networks }}"
+      secrets:
+        - "{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.build_runner_token.name }}"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - /etc/timezone:/etc/timezone:ro
+    catchallrunner:
+      configs:
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['catchallrunner-registration.json'] }}"
+          target: /templates/registration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['catchallrunner-config.json'] }}"
+          target: /templates/configuration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      deploy:
+        placement:
+          constraints:
+            - node.role != manager
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 5
+          window: 300s
+        update_config:
+          failure_action: rollback
+          monitor: 120s
+      environment:
+        GITLAB_URL: "{{ gitlab_olafnorge_de_gitlab_url }}"
+        GITLAB_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        REGISTRATION_TEMPLATE_FILE: /templates/registration_template
+        CONFIGURATION_TEMPLATE_FILE: /templates/configuration_template
+        REGISTRATION_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        RUNNER_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.catchall_runner_token.name }}"
+      image: "olafnorge/gitlab-runner:{{ gitlab_olafnorge_de_runner_version }}"
+      networks: "{{ gitlab_olafnorge_de_networks }}"
+      secrets:
+        - "{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.catchall_runner_token.name }}"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - /etc/timezone:/etc/timezone:ro
+    clairrunner:
+      configs:
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['clairrunner-registration.json'] }}"
+          target: /templates/registration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['clairrunner-config.json'] }}"
+          target: /templates/configuration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      deploy:
+        placement:
+          constraints:
+            - node.role != manager
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 5
+          window: 300s
+        update_config:
+          failure_action: rollback
+          monitor: 120s
+      environment:
+        GITLAB_URL: "{{ gitlab_olafnorge_de_gitlab_url }}"
+        GITLAB_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        REGISTRATION_TEMPLATE_FILE: /templates/registration_template
+        CONFIGURATION_TEMPLATE_FILE: /templates/configuration_template
+        REGISTRATION_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        RUNNER_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.clair_runner_token.name }}"
+      image: "olafnorge/gitlab-runner:{{ gitlab_olafnorge_de_runner_version }}"
+      networks: "{{ gitlab_olafnorge_de_networks }}"
+      secrets:
+        - "{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.clair_runner_token.name }}"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - /etc/timezone:/etc/timezone:ro
+    dockerrunner:
+      configs:
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['dockerrunner-registration.json'] }}"
+          target: /templates/registration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+        - source: "{{ gitlab_olafnorge_de_config_to_file_map['dockerrunner-config.json'] }}"
+          target: /templates/configuration_template
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      deploy:
+        placement:
+          constraints:
+            - node.role != manager
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 5
+          window: 300s
+        update_config:
+          failure_action: rollback
+          monitor: 120s
+      environment:
+        GITLAB_URL: "{{ gitlab_olafnorge_de_gitlab_url }}"
+        GITLAB_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        REGISTRATION_TEMPLATE_FILE: /templates/registration_template
+        CONFIGURATION_TEMPLATE_FILE: /templates/configuration_template
+        REGISTRATION_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        RUNNER_TOKEN_FILE: "/run/secrets/{{ gitlab_olafnorge_de_secrets.docker_runner_token.name }}"
+      image: "olafnorge/gitlab-runner:{{ gitlab_olafnorge_de_runner_version }}"
+      networks: "{{ gitlab_olafnorge_de_networks }}"
+      secrets:
+        - "{{ gitlab_olafnorge_de_secrets.gitlab_api_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.runners_registration_token.name }}"
+        - "{{ gitlab_olafnorge_de_secrets.docker_runner_token.name }}"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - /etc/timezone:/etc/timezone:ro
+  networks: "{{ gitlab_olafnorge_de_network_definitions }}"
+  configs: "{{ gitlab_olafnorge_de_config_dict }}"
+  secrets: "{{ gitlab_olafnorge_de_secrets_dict }}"
+
+gitlab_olafnorge_de_labels: []
+gitlab_olafnorge_de_name: gitlabolafnorgede
+gitlab_olafnorge_de_network_definitions: []
+gitlab_olafnorge_de_network_internal: internal
+gitlab_olafnorge_de_networks:
+  - "{{ gitlab_olafnorge_de_network_internal }}"
+# https://hub.docker.com/r/gitlab/gitlab-ce/tags
+gitlab_olafnorge_de_version: 12.10.5-ce.0
+gitlab_olafnorge_de_config_path: /root/gitlab.rb
+# https://hub.docker.com/r/olafnorge/gitlab-runner/tags
+gitlab_olafnorge_de_runner_version: alpine-v12.10.2
+
+gitlab_olafnorge_de_gitlab_url: https://gitlab.example.com/
+gitlab_olafnorge_de_registry_url: https://registry.example.com
+gitlab_olafnorge_de_email_from: gitlab@example.com
+gitlab_olafnorge_de_incoming_email_address: gitlab+%{key}@example.com
+gitlab_olafnorge_de_trusted_proxies:
+  - 192.168.101.2
+  - 192.168.101.3
+  - 192.168.101.4
+gitlab_olafnorge_de_monitoring_whitelist:
+  - 127.0.0.0/8
+  - ::1/128
+  - 192.168.101.0/24
+gitlab_olafnorge_de_runner_concurrency: 1
+gitlab_olafnorge_de_runner_log_level: info
+gitlab_olafnorge_de_runner_check_interval: 0
+gitlab_olafnorge_de_alpine_image: alpine:3.11
+gitlab_olafnorge_de_runners:
+  ansiblerunner:
+    name: &ansible_runner_name ansible-runner
+    registration:
+      description: *ansible_runner_name
+      active: yes
+      locked: no
+      run_untagged: no
+      tag_list:
+        - ansible
+      access_level: not_protected
+      maximum_timeout: 1800
+    config:
+      concurrent: "{{ gitlab_olafnorge_de_runner_concurrency }}"
+      log_level: "{{ gitlab_olafnorge_de_runner_log_level }}"
+      check_interval: "{{ gitlab_olafnorge_de_runner_check_interval }}"
+      runners:
+        - name: *ansible_runner_name
+          url: "{{ gitlab_olafnorge_de_gitlab_url }}"
+          limit: 1
+          executor: docker
+          docker:
+            image: &ansible_runner_image olafnorge/ansible:2.9
+            privileged: no
+            disable_entrypoint_overwrite: yes
+            disable_cache: yes
+            allowed_images:
+              - *ansible_runner_image
+            allowed_services:
+              - *ansible_runner_image
+  buildrunner:
+    name: &build_runner_name build-runner
+    registration:
+      description: *build_runner_name
+      active: yes
+      locked: no
+      run_untagged: no
+      tag_list:
+        - build
+        - ci-secrets-server
+      access_level: not_protected
+      maximum_timeout: 1800
+    config:
+      concurrent: "{{ gitlab_olafnorge_de_runner_concurrency }}"
+      log_level: "{{ gitlab_olafnorge_de_runner_log_level }}"
+      check_interval: "{{ gitlab_olafnorge_de_runner_check_interval }}"
+      runners:
+        - name: *build_runner_name
+          url: "{{ gitlab_olafnorge_de_gitlab_url }}"
+          limit: 1
+          executor: docker
+          docker:
+            image: &build_runner_image docker:dind
+            privileged: no
+            disable_entrypoint_overwrite: yes
+            disable_cache: yes
+            volumes:
+              - /var/run/docker.sock:/var/run/docker.sock
+            allowed_images:
+              - *build_runner_image
+            allowed_services:
+              - &build_runner_service_image olafnorge/ci-secrets-server:latest
+            services:
+              - name: *build_runner_service_image
+                alias: ci-secrets-server
+  catchallrunner:
+    name: &catchall_runner_name catchall-runner
+    registration:
+      description: *catchall_runner_name
+      active: yes
+      locked: no
+      run_untagged: yes
+      tag_list:
+        - catchall
+      access_level: not_protected
+      maximum_timeout: 1800
+    config:
+      concurrent: "{{ gitlab_olafnorge_de_runner_concurrency }}"
+      log_level: "{{ gitlab_olafnorge_de_runner_log_level }}"
+      check_interval: "{{ gitlab_olafnorge_de_runner_check_interval }}"
+      runners:
+        - name: *catchall_runner_name
+          url: "{{ gitlab_olafnorge_de_gitlab_url }}"
+          limit: 1
+          shell: bash
+          executor: shell
+  clairrunner:
+    name: &clair_runner_name clair-runner
+    registration:
+      description: *clair_runner_name
+      active: yes
+      locked: no
+      run_untagged: no
+      tag_list:
+        - clair
+      access_level: not_protected
+      maximum_timeout: 1800
+    config:
+      concurrent: "{{ gitlab_olafnorge_de_runner_concurrency }}"
+      log_level: "{{ gitlab_olafnorge_de_runner_log_level }}"
+      check_interval: "{{ gitlab_olafnorge_de_runner_check_interval }}"
+      runners:
+        - name: *clair_runner_name
+          url: "{{ gitlab_olafnorge_de_gitlab_url }}"
+          limit: 1
+          executor: docker
+          environment:
+            - CLAIR_ADDR=https://clair.example.com:443
+            - CLAIR_OUTPUT=High
+            - IGNORE_UNFIXED=true
+          docker:
+            image: &clair_runner_image olafnorge/klar:2.4.0
+            privileged: no
+            disable_entrypoint_overwrite: yes
+            disable_cache: yes
+            allowed_images:
+              - *clair_runner_image
+            allowed_services:
+              - *clair_runner_image
+  dockerrunner:
+    name: &docker_runner_name docker-runner
+    registration:
+      description: *docker_runner_name
+      active: yes
+      locked: no
+      run_untagged: no
+      tag_list:
+        - docker
+      access_level: not_protected
+      maximum_timeout: 1800
+    config:
+      concurrent: "{{ gitlab_olafnorge_de_runner_concurrency }}"
+      log_level: "{{ gitlab_olafnorge_de_runner_log_level }}"
+      check_interval: "{{ gitlab_olafnorge_de_runner_check_interval }}"
+      runners:
+        - name: *docker_runner_name
+          url: "{{ gitlab_olafnorge_de_gitlab_url }}"
+          limit: 1
+          executor: docker
+          # TODO: Absolute path to a directory where build caches will be stored in context of selected executor (locally, Docker, SSH). If the docker executor is used, this directory needs to be included in its volumes parameter.
+          #          cache_dir: /some/dir
+          docker:
+            image: "{{ gitlab_olafnorge_de_alpine_image }}"
+            privileged: no
+            disable_entrypoint_overwrite: no
+            disable_cache: yes
+
+
+gitlab_olafnorge_de_secrets:
+  ansible_runner_token:
+    data: "{{ gitlab_olafnorge_de_ansible_runner_token }}"
+    name: gitlab_olafnorge_de_ansible_runner_token
+  build_runner_token:
+    data: "{{ gitlab_olafnorge_de_build_runner_token }}"
+    name: gitlab_olafnorge_de_build_runner_token
+  catchall_runner_token:
+    data: "{{ gitlab_olafnorge_de_catchall_runner_token }}"
+    name: gitlab_olafnorge_de_catchall_runner_token
+  clair_runner_token:
+    data: "{{ gitlab_olafnorge_de_clair_runner_token }}"
+    name: gitlab_olafnorge_de_clair_runner_token
+  docker_runner_token:
+    data: "{{ gitlab_olafnorge_de_docker_runner_token }}"
+    name: gitlab_olafnorge_de_docker_runner_token
+  email_password:
+    data: "{{ gitlab_olafnorge_de_email_password }}"
+    name: gitlab_olafnorge_de_email_password
+  gitlab_api_token:
+    data: "{{ gitlab_olafnorge_de_gitlab_api_token }}"
+    name: gitlab_olafnorge_de_gitlab_api_token
+  initial_root_password:
+    data: "{{ gitlab_olafnorge_de_initial_root_password }}"
+    name: gitlab_olafnorge_de_initial_root_password
+  initial_shared_runners_registration_token:
+    data: "{{ gitlab_olafnorge_de_initial_shared_runners_registration_token }}"
+    name: gitlab_olafnorge_de_initial_shared_runners_registration_token
+  runners_registration_token:
+    data: "{{ gitlab_olafnorge_de_runners_registration_token }}"
+    name: gitlab_olafnorge_de_runners_registration_token
+
+# vaults, you may define them in a separate file which overrides these defaults
+gitlab_olafnorge_de_ansible_runner_token: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_build_runner_token: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_catchall_runner_token: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_clair_runner_token: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_docker_runner_token: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_email_password: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_initial_root_password: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_initial_shared_runners_registration_token: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_runners_registration_token: # FIXME: add your vault here using 'ansible-vault'
+gitlab_olafnorge_de_gitlab_api_token: # FIXME: add your vault here using 'ansible-vault'

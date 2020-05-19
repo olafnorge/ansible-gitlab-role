@@ -1,0 +1,5 @@
+{
+{% for gitlab_olafnorge_de_template_result in gitlab_olafnorge_de_template_results %}
+  "{{ gitlab_olafnorge_de_template_result.dest | basename | replace((gitlab_olafnorge_de_template_result.dest | basename | splitext)[1], '-' + gitlab_olafnorge_de_template_result.checksum[:10]) }}": {"file": "{{ gitlab_olafnorge_de_template_result.dest }}"},
+{% endfor %}
+}
